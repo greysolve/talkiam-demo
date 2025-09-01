@@ -556,27 +556,90 @@
                     responseDiv.querySelector(".message-content").textContent =
                       fullMessage;
                     messages.scrollTop = messages.scrollHeight;
-                  } else if (
-                    event.metadata?.nodeName === "Respond to Webhook"
-                  ) {
-                    // Final response from webhook - this contains the complete message
-                    try {
-                      const webhookData = JSON.parse(event.content);
-                      if (webhookData.output) {
-                        fullMessage = webhookData.output;
-                        finalResponseReceived = true;
-                      }
-                    } catch (e) {
-                      // If it's not JSON, use as-is
-                      if (event.content) {
-                        fullMessage = event.content;
-                        finalResponseReceived = true;
-                      }
-                    }
-                    responseDiv.querySelector(".message-content").innerHTML =
-                      fullMessage;
-                    messages.scrollTop = messages.scrollHeight;
-                  }
+                  } else if (event.metadata?.nodeName === "Respond to Webhook") {
+  try {
+    const webhookData = JSON.parse(event.content);
+    if (webhookData.output) {
+      // Try to parse as structured JSON
+      try {
+        const structuredData = JSON.parse(webhookData.output);
+        
+        // Check if this is our structured format
+        if (structuredData.summary || structuredData.access) {
+          let formattedResponse = '';
+          
+          // Add summary
+          if (structuredData.summary) {
+            formattedResponse += `<div style="margin-bottom: 12px;">${structuredData.summary}</div>`;
+          }
+          
+          // Add data table
+          if (structuredData.access && structuredData.access.length > 0) {
+            formattedResponse += `
+              <div style="overflow-x: auto; margin: 12px 0;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                  <thead>
+                    <tr style="background: #f8f9fa;">
+                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Name</th>
+                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Email</th>
+                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">App</th>
+                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Access</th>
+                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>`;
+            
+            structuredData.access.forEach((row, index) => {
+              const bgColor = index % 2 === 0 ? '#ffffff' : '#f8f9fa';
+              const statusIcon = row.access_status === 'ORPHANED' ? '⚠️' : '✅';
+              
+              formattedResponse += `
+                <tr style="background: ${bgColor};">
+                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.first_name || ''} ${row.last_name || ''}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.user_id}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.app_name}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.access_level}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${statusIcon} ${row.access_status || row.valid}</td>
+                </tr>`;
+            });
+            
+            formattedResponse += '</tbody></table></div>';
+          }
+          
+          // Add security concerns
+          if (structuredData.security_concerns && structuredData.security_concerns.length > 0) {
+            formattedResponse += '<div style="background: #fff3cd; padding: 12px; margin: 12px 0; border-radius: 4px;">';
+            formattedResponse += '<strong>⚠️ Security Concerns:</strong><ul>';
+            structuredData.security_concerns.forEach(concern => {
+              formattedResponse += `<li>${concern}</li>`;
+            });
+            formattedResponse += '</ul></div>';
+          }
+          
+          // Add follow-up
+          if (structuredData.follow_up) {
+            formattedResponse += `<div style="margin-top: 12px;">${structuredData.follow_up}</div>`;
+          }
+          
+          fullMessage = formattedResponse;
+        } else {
+          fullMessage = webhookData.output;
+        }
+      } catch (e) {
+        // Not structured JSON, use as plain text
+        fullMessage = webhookData.output;
+      }
+      finalResponseReceived = true;
+    }
+  } catch (e) {
+    if (event.content) {
+      fullMessage = event.content;
+      finalResponseReceived = true;
+    }
+  }
+  responseDiv.querySelector(".message-content").innerHTML = fullMessage;
+  messages.scrollTop = messages.scrollHeight;
+}
                 }
               } catch (e) {
                 // Not a valid JSON line, skip it
@@ -605,6 +668,23 @@
 
       window.setMessage = setMessage;
       window.sendMessage = sendMessage;
+      function downloadCSV(data) {
+        if (!data || data.length === 0) return;
+        const headers = Object.keys(data[0]);
+        const csv = [
+          headers.join(','),
+          ...data.map(row => headers.map(h => row[h] || '').join(','))
+        ].join('\n');
+        
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `access_${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(url);
+        }
+        window.downloadCSV = downloadCSV;
     </script>
   </body>
 </html>
