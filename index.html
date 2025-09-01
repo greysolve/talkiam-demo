@@ -561,8 +561,14 @@
     const webhookData = JSON.parse(event.content);
     if (webhookData.output) {
       // Try to parse as structured JSON
+      let structuredData;
       try {
-        const structuredData = JSON.parse(webhookData.output);
+        // Check if webhookData.output is already an object or needs parsing
+        if (typeof webhookData.output === 'string') {
+          structuredData = JSON.parse(webhookData.output);
+        } else {
+          structuredData = webhookData.output;
+        }
         
         // Check if this is our structured format
         if (structuredData.summary || structuredData.access) {
