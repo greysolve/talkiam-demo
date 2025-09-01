@@ -336,7 +336,7 @@
             currentUser = {
               email: session.user.email,
               name: session.user.email.split("@")[0].replace(/[._]/g, " "),
-              company: "Demo Company",
+              company: "TalkIAM AI Powered",
               id: session.user.id,
             };
             showLoggedIn();
@@ -596,14 +596,40 @@
                         // Add data table - handle both "access" and "data" formats
                         const tableData = structuredData.access || structuredData.data;
                         if (tableData && tableData.length > 0) {
+                          // Generate table headers based on data format
+                          let tableHeaders = '';
+                          const firstRow = tableData[0];
+                          const hasOldFormatFields = firstRow && (firstRow.first_name || firstRow.user_id || firstRow.app_name);
+                          const hasNewFormatFields = firstRow && (firstRow.email || firstRow.department || firstRow.admin_apps);
+                          
+                          console.log("First row:", firstRow);
+                          console.log("Has old format fields:", hasOldFormatFields);
+                          console.log("Has new format fields:", hasNewFormatFields);
+                          
+                          if (hasOldFormatFields) {
+                            // Old format headers
+                            tableHeaders = `
+                              <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Name</th>
+                              <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Email</th>
+                              <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">App</th>
+                              <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Access Level</th>
+                              <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Valid</th>
+                              <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Access Status</th>
+                              <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Date Granted</th>`;
+                          } else {
+                            // New format headers
+                            tableHeaders = `
+                              <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Email</th>
+                              <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Department</th>
+                              <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Admin Applications</th>`;
+                          }
+                          
                           formattedResponse += `
                             <div style="overflow-x: auto; margin: 12px 0;">
                               <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
                                 <thead>
                                   <tr style="background: #f8f9fa;">
-                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Email</th>
-                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Department</th>
-                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Admin Applications</th>
+                                    ${tableHeaders}
                                   </tr>
                                 </thead>
                                 <tbody>`;
@@ -612,7 +638,9 @@
                             const bgColor = index % 2 === 0 ? '#ffffff' : '#f8f9fa';
                             
                             // Handle both old format (access) and new format (data)
-                            if (structuredData.access) {
+                            console.log("Row data:", row);
+                            
+                            if (hasOldFormatFields) {
                               // Old format with detailed access info
                               const validIcon = row.valid === 'active' ? '✅' : '❌';
                               const statusIcon = row.access_status === 'ORPHANED' ? '⚠️' : '✅';
@@ -641,6 +669,15 @@
                           });
                           
                           formattedResponse += '</tbody></table></div>';
+                          
+                          // Add Download CSV button
+                          formattedResponse += `
+                            <div style="margin-top: 12px; text-align: right;">
+                              <button onclick="downloadCSV(${JSON.stringify(tableData).replace(/"/g, '&quot;')})" 
+                                      style="background: #007bff; color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 14px;">
+                                📥 Download CSV
+                              </button>
+                            </div>`;
                         }
                         
                         // Add security concerns
