@@ -559,19 +559,25 @@
                   } else if (event.metadata?.nodeName === "Respond to Webhook") {
   try {
     const webhookData = JSON.parse(event.content);
-    if (webhookData.output) {
-      // Try to parse as structured JSON
-      let structuredData;
-      try {
-        // Check if webhookData.output is already an object or needs parsing
-        if (typeof webhookData.output === 'string') {
+    
+    // Handle new array format: [{"output": {...}}]
+    let structuredData = null;
+    if (Array.isArray(webhookData) && webhookData.length > 0 && webhookData[0].output) {
+      structuredData = webhookData[0].output;
+    } else if (webhookData.output) {
+      // Handle old format: {"output": "..."} or {"output": {...}}
+      if (typeof webhookData.output === 'string') {
+        try {
           structuredData = JSON.parse(webhookData.output);
-        } else {
-          structuredData = webhookData.output;
+        } catch (e) {
+          structuredData = null;
         }
-        
-        // Check if this is our structured format
-        if (structuredData.summary || structuredData.access) {
+      } else {
+        structuredData = webhookData.output;
+      }
+    }
+    
+    if (structuredData && (structuredData.summary || structuredData.access)) {
           let formattedResponse = '';
           
           // Add summary
@@ -634,12 +640,9 @@
           
           fullMessage = formattedResponse;
         } else {
-          fullMessage = webhookData.output;
+          // Fallback to showing raw data for debugging
+          fullMessage = `<pre>${JSON.stringify(webhookData, null, 2)}</pre>`;
         }
-      } catch (e) {
-        // Not structured JSON, use as plain text
-        fullMessage = webhookData.output;
-      }
       finalResponseReceived = true;
     }
   } catch (e) {
