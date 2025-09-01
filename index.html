@@ -176,8 +176,19 @@
         transition: all 0.2s;
       }
 
-      .quick-action:hover {
-        background: #e9ecef;
+      .typing-indicator {
+        animation: pulse 1.5s infinite;
+        color: #6b7280;
+      }
+
+      @keyframes pulse {
+        0%,
+        100% {
+          opacity: 0.6;
+        }
+        50% {
+          opacity: 1;
+        }
       }
     </style>
   </head>
@@ -256,11 +267,21 @@
     <!-- Supabase Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
+    <!-- Configuration (create config.js with your API key) -->
+    <script src="config.js"></script>
+
     <script>
       // Initialize Supabase
       const SUPABASE_URL = "https://uieggrikbpmcwoncyntq.supabase.co";
       const SUPABASE_ANON_KEY =
         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpZWdncmlrYnBtY3dvbmN5bnRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNTA2NzYsImV4cCI6MjA2OTcyNjY3Nn0.frkEQ4TxNMyIENPp91aUjkTo1Fz2R4ZJXuSCxI0iKPY";
+
+      // Backend API configuration
+      const BACKEND_URL = "https://app.greysolve.com/webhook-test/ui-chat";
+      // For production, use environment variable or secure configuration
+      // If using a build tool like Vite: const API_KEY = import.meta.env.VITE_API_KEY
+      // For static hosting: inject during deployment or use a config endpoint
+      const API_KEY = "YOUR_API_KEY_HERE"; // Replace with actual API key
 
       let supabase;
       let currentUser = null;
@@ -482,23 +503,47 @@
         sendButton.disabled = true;
 
         try {
-          const response = await fetch(
-            "https://your-n8n-instance.com/webhook/iam-chat",
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-              },
-              body: JSON.stringify({
-                message: content,
-              }),
-            }
-          );
+          const response = await fetch(BACKEND_URL, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${API_KEY}`,
+            },
+            body: JSON.stringify({
+              message: content,
+            }),
+          });
 
           if (!response.ok) throw new Error("Network error");
 
-          const data = await response.json();
-          addMessage(data.response || "Response received", false);
+          const text = await response.text();
+
+          // Handle streaming response from n8n
+          let message = "";
+          const lines = text.split("\n");
+          for (const line of lines) {
+            if (line.startsWith('{"type":"item"')) {
+              const eventData = JSON.parse(line);
+              const content = JSON.parse(eventData.content);
+              message =
+                content.output || content.response || "Response received";
+              break;
+            }
+          }
+
+          // If no streaming format found, try parsing as regular JSON
+          if (!message) {
+            try {
+              const data = JSON.parse(text);
+              message = Array.isArray(data)
+                ? data[0].output
+                : data.output || data.response || "Response received";
+            } catch (e) {
+              message = "Response received";
+            }
+          }
+
+          addMessage(message, false);
         } catch (error) {
           console.error("Chat error:", error);
           addMessage("Sorry, I encountered an error. Please try again.", false);
