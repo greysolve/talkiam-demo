@@ -583,23 +583,28 @@
                       <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Name</th>
                       <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Email</th>
                       <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">App</th>
-                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Access</th>
-                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Status</th>
+                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Access Level</th>
+                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Valid</th>
+                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Access Status</th>
+                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Date Granted</th>
                     </tr>
                   </thead>
                   <tbody>`;
             
             structuredData.access.forEach((row, index) => {
               const bgColor = index % 2 === 0 ? '#ffffff' : '#f8f9fa';
+              const validIcon = row.valid === 'active' ? '✅' : '❌';
               const statusIcon = row.access_status === 'ORPHANED' ? '⚠️' : '✅';
               
               formattedResponse += `
                 <tr style="background: ${bgColor};">
-                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.first_name || ''} ${row.last_name || ''}</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.user_id}</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.app_name}</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.access_level}</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${statusIcon} ${row.access_status || row.valid}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${(row.first_name || '')} ${(row.last_name || '')}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.user_id || ''}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.app_name || ''}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.access_level || ''}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${validIcon} ${row.valid || ''}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${statusIcon} ${row.access_status || ''}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.date_granted || ''}</td>
                 </tr>`;
             });
             
@@ -639,7 +644,7 @@
   }
   responseDiv.querySelector(".message-content").innerHTML = fullMessage;
   messages.scrollTop = messages.scrollHeight;
-}
+                  }
                 }
               } catch (e) {
                 // Not a valid JSON line, skip it
