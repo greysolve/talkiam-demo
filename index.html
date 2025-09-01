@@ -278,10 +278,9 @@
 
       // Backend API configuration
       const BACKEND_URL = "https://app.greysolve.com/webhook-test/ui-chat";
-      // For production, use environment variable or secure configuration
-      // If using a build tool like Vite: const API_KEY = import.meta.env.VITE_API_KEY
-      // For static hosting: inject during deployment or use a config endpoint
-      const API_KEY = "YOUR_API_KEY_HERE"; // Replace with actual API key
+      // API key - since config.js is public in your repo anyway
+      const API_KEY =
+        "a4401ade008b4824d0caabe34249b98acb84ddbdda743171f0d68f2a8f79bcd1";
 
       let supabase;
       let currentUser = null;
