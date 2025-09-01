@@ -557,102 +557,101 @@
                       fullMessage;
                     messages.scrollTop = messages.scrollHeight;
                   } else if (event.metadata?.nodeName === "Respond to Webhook") {
-  try {
-    const webhookData = JSON.parse(event.content);
-    
-    // Handle new array format: [{"output": {...}}]
-    let structuredData = null;
-    if (Array.isArray(webhookData) && webhookData.length > 0 && webhookData[0].output) {
-      structuredData = webhookData[0].output;
-    } else if (webhookData.output) {
-      // Handle old format: {"output": "..."} or {"output": {...}}
-      if (typeof webhookData.output === 'string') {
-        try {
-          structuredData = JSON.parse(webhookData.output);
-        } catch (e) {
-          structuredData = null;
-        }
-      } else {
-        structuredData = webhookData.output;
-      }
-    }
-    
-    if (structuredData && (structuredData.summary || structuredData.access)) {
-          let formattedResponse = '';
-          
-          // Add summary
-          if (structuredData.summary) {
-            formattedResponse += `<div style="margin-bottom: 12px;">${structuredData.summary}</div>`;
-          }
-          
-          // Add data table
-          if (structuredData.access && structuredData.access.length > 0) {
-            formattedResponse += `
-              <div style="overflow-x: auto; margin: 12px 0;">
-                <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
-                  <thead>
-                    <tr style="background: #f8f9fa;">
-                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Name</th>
-                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Email</th>
-                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">App</th>
-                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Access Level</th>
-                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Valid</th>
-                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Access Status</th>
-                      <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Date Granted</th>
-                    </tr>
-                  </thead>
-                  <tbody>`;
-            
-            structuredData.access.forEach((row, index) => {
-              const bgColor = index % 2 === 0 ? '#ffffff' : '#f8f9fa';
-              const validIcon = row.valid === 'active' ? '✅' : '❌';
-              const statusIcon = row.access_status === 'ORPHANED' ? '⚠️' : '✅';
-              
-              formattedResponse += `
-                <tr style="background: ${bgColor};">
-                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${(row.first_name || '')} ${(row.last_name || '')}</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.user_id || ''}</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.app_name || ''}</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.access_level || ''}</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${validIcon} ${row.valid || ''}</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${statusIcon} ${row.access_status || ''}</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.date_granted || ''}</td>
-                </tr>`;
-            });
-            
-            formattedResponse += '</tbody></table></div>';
-          }
-          
-          // Add security concerns
-          if (structuredData.security_concerns && structuredData.security_concerns.length > 0) {
-            formattedResponse += '<div style="background: #fff3cd; padding: 12px; margin: 12px 0; border-radius: 4px;">';
-            formattedResponse += '<strong>⚠️ Security Concerns:</strong><ul>';
-            structuredData.security_concerns.forEach(concern => {
-              formattedResponse += `<li>${concern}</li>`;
-            });
-            formattedResponse += '</ul></div>';
-          }
-          
-          // Add follow-up
-          if (structuredData.follow_up) {
-            formattedResponse += `<div style="margin-top: 12px;">${structuredData.follow_up}</div>`;
-          }
-          
-          fullMessage = formattedResponse;
-        } else {
-          // Fallback to showing raw data for debugging
-          fullMessage = `<pre>${JSON.stringify(webhookData, null, 2)}</pre>`;
-        }
-      finalResponseReceived = true;
-    }
-  } catch (e) {
-    if (event.content) {
-      fullMessage = event.content;
-      finalResponseReceived = true;
-    }
-  }
-  responseDiv.querySelector(".message-content").innerHTML = fullMessage;
-  messages.scrollTop = messages.scrollHeight;
+                    try {
+                      const webhookData = JSON.parse(event.content);
+                      
+                      // Handle new array format: [{"output": {...}}]
+                      let structuredData = null;
+                      if (Array.isArray(webhookData) && webhookData.length > 0 && webhookData[0].output) {
+                        structuredData = webhookData[0].output;
+                      } else if (webhookData.output) {
+                        // Handle old format: {"output": "..."} or {"output": {...}}
+                        if (typeof webhookData.output === 'string') {
+                          try {
+                            structuredData = JSON.parse(webhookData.output);
+                          } catch (e) {
+                            structuredData = null;
+                          }
+                        } else {
+                          structuredData = webhookData.output;
+                        }
+                      }
+                      
+                      if (structuredData && (structuredData.summary || structuredData.access)) {
+                        let formattedResponse = '';
+                        
+                        // Add summary
+                        if (structuredData.summary) {
+                          formattedResponse += `<div style="margin-bottom: 12px;">${structuredData.summary}</div>`;
+                        }
+                        
+                        // Add data table
+                        if (structuredData.access && structuredData.access.length > 0) {
+                          formattedResponse += `
+                            <div style="overflow-x: auto; margin: 12px 0;">
+                              <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                                <thead>
+                                  <tr style="background: #f8f9fa;">
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Name</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Email</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">App</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Access Level</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Valid</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Access Status</th>
+                                    <th style="padding: 8px; text-align: left; border-bottom: 2px solid #dee2e6;">Date Granted</th>
+                                  </tr>
+                                </thead>
+                                <tbody>`;
+                          
+                          structuredData.access.forEach((row, index) => {
+                            const bgColor = index % 2 === 0 ? '#ffffff' : '#f8f9fa';
+                            const validIcon = row.valid === 'active' ? '✅' : '❌';
+                            const statusIcon = row.access_status === 'ORPHANED' ? '⚠️' : '✅';
+                            
+                            formattedResponse += `
+                              <tr style="background: ${bgColor};">
+                                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${(row.first_name || '')} ${(row.last_name || '')}</td>
+                                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.user_id || ''}</td>
+                                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.app_name || ''}</td>
+                                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.access_level || ''}</td>
+                                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${validIcon} ${row.valid || ''}</td>
+                                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${statusIcon} ${row.access_status || ''}</td>
+                                <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.date_granted || ''}</td>
+                              </tr>`;
+                          });
+                          
+                          formattedResponse += '</tbody></table></div>';
+                        }
+                        
+                        // Add security concerns
+                        if (structuredData.security_concerns && structuredData.security_concerns.length > 0) {
+                          formattedResponse += '<div style="background: #fff3cd; padding: 12px; margin: 12px 0; border-radius: 4px;">';
+                          formattedResponse += '<strong>⚠️ Security Concerns:</strong><ul>';
+                          structuredData.security_concerns.forEach(concern => {
+                            formattedResponse += `<li>${concern}</li>`;
+                          });
+                          formattedResponse += '</ul></div>';
+                        }
+                        
+                        // Add follow-up
+                        if (structuredData.follow_up) {
+                          formattedResponse += `<div style="margin-top: 12px;">${structuredData.follow_up}</div>`;
+                        }
+                        
+                        fullMessage = formattedResponse;
+                      } else {
+                        // Fallback to showing raw data for debugging
+                        fullMessage = `<pre>${JSON.stringify(webhookData, null, 2)}</pre>`;
+                      }
+                      finalResponseReceived = true;
+                    } catch (e) {
+                      if (event.content) {
+                        fullMessage = event.content;
+                        finalResponseReceived = true;
+                      }
+                    }
+                    responseDiv.querySelector(".message-content").innerHTML = fullMessage;
+                    messages.scrollTop = messages.scrollHeight;
                   }
                 }
               } catch (e) {
