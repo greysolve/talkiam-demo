@@ -176,6 +176,10 @@
         transition: all 0.2s;
       }
 
+      .quick-action:hover {
+        background: #e9ecef;
+      }
+
       .typing-indicator {
         animation: pulse 1.5s infinite;
         color: #6b7280;
@@ -278,7 +282,6 @@
 
       // Backend API configuration
       const BACKEND_URL = "https://app.greysolve.com/webhook-test/ui-chat";
-      // API key - since config.js is public in your repo anyway
       const API_KEY =
         "a4401ade008b4824d0caabe34249b98acb84ddbdda743171f0d68f2a8f79bcd1";
 
@@ -484,6 +487,7 @@
         messageDiv.innerHTML = `<div class="message-content">${content}</div>`;
         messages.appendChild(messageDiv);
         messages.scrollTop = messages.scrollHeight;
+        return messageDiv;
       }
 
       async function sendMessage() {
@@ -501,6 +505,14 @@
 
         sendButton.disabled = true;
 
+        // Add a message div that we'll update with streaming content
+        const responseDiv = document.createElement("div");
+        responseDiv.className = "message assistant";
+        responseDiv.innerHTML =
+          '<div class="message-content"><span class="typing-indicator">●●●</span></div>';
+        messages.appendChild(responseDiv);
+        messages.scrollTop = messages.scrollHeight;
+
         try {
           const response = await fetch(BACKEND_URL, {
             method: "POST",
@@ -515,37 +527,76 @@
 
           if (!response.ok) throw new Error("Network error");
 
-          const text = await response.text();
+          const reader = response.body.getReader();
+          const decoder = new TextDecoder();
+          let fullMessage = "";
+          let buffer = "";
+          let finalResponseReceived = false;
 
-          // Handle streaming response from n8n
-          let message = "";
-          const lines = text.split("\n");
-          for (const line of lines) {
-            if (line.startsWith('{"type":"item"')) {
-              const eventData = JSON.parse(line);
-              const content = JSON.parse(eventData.content);
-              message =
-                content.output || content.response || "Response received";
-              break;
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split("\n");
+
+            // Keep the last partial line in the buffer
+            buffer = lines.pop() || "";
+
+            for (const line of lines) {
+              if (!line.trim()) continue;
+
+              try {
+                const event = JSON.parse(line);
+
+                if (event.type === "item") {
+                  if (event.metadata?.nodeName === "IAM Agent") {
+                    // Streaming content from the AI - just append the text
+                    fullMessage += event.content || "";
+                    responseDiv.querySelector(".message-content").textContent =
+                      fullMessage;
+                    messages.scrollTop = messages.scrollHeight;
+                  } else if (
+                    event.metadata?.nodeName === "Respond to Webhook"
+                  ) {
+                    // Final response from webhook - this contains the complete message
+                    try {
+                      const webhookData = JSON.parse(event.content);
+                      if (webhookData.output) {
+                        fullMessage = webhookData.output;
+                        finalResponseReceived = true;
+                      }
+                    } catch (e) {
+                      // If it's not JSON, use as-is
+                      if (event.content) {
+                        fullMessage = event.content;
+                        finalResponseReceived = true;
+                      }
+                    }
+                    responseDiv.querySelector(".message-content").innerHTML =
+                      fullMessage;
+                    messages.scrollTop = messages.scrollHeight;
+                  }
+                }
+              } catch (e) {
+                // Not a valid JSON line, skip it
+                console.log("Skipping non-JSON line");
+              }
             }
           }
 
-          // If no streaming format found, try parsing as regular JSON
-          if (!message) {
-            try {
-              const data = JSON.parse(text);
-              message = Array.isArray(data)
-                ? data[0].output
-                : data.output || data.response || "Response received";
-            } catch (e) {
-              message = "Response received";
-            }
+          // If we never got a final response, show what we accumulated
+          if (!finalResponseReceived && fullMessage) {
+            responseDiv.querySelector(".message-content").innerHTML =
+              fullMessage;
+          } else if (!fullMessage) {
+            responseDiv.querySelector(".message-content").textContent =
+              "Response received";
           }
-
-          addMessage(message, false);
         } catch (error) {
           console.error("Chat error:", error);
-          addMessage("Sorry, I encountered an error. Please try again.", false);
+          responseDiv.querySelector(".message-content").textContent =
+            "Sorry, I encountered an error. Please try again.";
         }
 
         sendButton.disabled = false;
