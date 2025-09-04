@@ -599,7 +599,7 @@
                           // Generate table headers based on data format
                           let tableHeaders = '';
                           const firstRow = tableData[0];
-                          const hasOldFormatFields = firstRow && (firstRow.first_name || firstRow.email || firstRow.app_name);
+                          const hasOldFormatFields = firstRow && (firstRow.first_name || firstRow.name || firstRow.email || firstRow.app_name);
                           const hasNewFormatFields = firstRow && (firstRow.email || firstRow.department || firstRow.admin_apps);
                           
                           console.log("First row:", firstRow);
@@ -647,7 +647,7 @@
                               
                               formattedResponse += `
                                 <tr style="background: ${bgColor};">
-                                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${(row.first_name || '')} ${(row.last_name || '')}</td>
+                                  <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${(row.first_name && row.last_name) ? (row.first_name + ' ' + row.last_name) : (row.name || '')}</td>
                                   <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.email || ''}</td>
                                   <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.app_name || ''}</td>
                                   <td style="padding: 8px; border-bottom: 1px solid #dee2e6;">${row.access_level || ''}</td>
