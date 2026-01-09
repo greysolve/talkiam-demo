@@ -278,7 +278,7 @@
       // Configuration - loaded from environment variables
       let SUPABASE_URL, SUPABASE_ANON_KEY, BACKEND_URL;
 
-      let supabase;
+      let supabaseClient;
       let currentUser = null;
 
       // Load config from API
@@ -312,7 +312,7 @@
         await loadConfig();
         
         // Initialize Supabase
-        supabase = window.supabase.createClient(
+        supabaseClient = window.supabase.createClient(
           SUPABASE_URL,
           SUPABASE_ANON_KEY
         );
@@ -348,7 +348,7 @@
         try {
           const {
             data: { session },
-          } = await supabase.auth.getSession();
+          } = await supabaseClient.auth.getSession();
 
           if (session) {
             currentUser = {
@@ -370,7 +370,7 @@
       async function handleAuth() {
         if (currentUser) {
           // Sign out
-          await supabase.auth.signOut();
+          await supabaseClient.auth.signOut();
           currentUser = null;
           showLoginRequired();
         } else {
@@ -427,7 +427,7 @@
         errorDiv.style.display = "none";
 
         try {
-          const { data, error } = await supabase.auth.signInWithPassword({
+          const { data, error } = await supabaseClient.auth.signInWithPassword({
             email: email,
             password: password,
           });
