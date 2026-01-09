@@ -275,24 +275,42 @@
     <script src="config.js"></script>
 
     <script>
-      // Initialize Supabase
-      const SUPABASE_URL = "https://uieggrikbpmcwoncyntq.supabase.co";
-      const SUPABASE_ANON_KEY =
-        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVpZWdncmlrYnBtY3dvbmN5bnRxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQxNTA2NzYsImV4cCI6MjA2OTcyNjY3Nn0.frkEQ4TxNMyIENPp91aUjkTo1Fz2R4ZJXuSCxI0iKPY";
-
-      // Backend API configuration
-      const BACKEND_URL = "https://app.greysolve.com/webhook/ui-chat";
-      const API_KEY =
-        "a4401ade008b4824d0caabe34249b98acb84ddbdda743171f0d68f2a8f79bcd1";
+      // Configuration - loaded from environment variables
+      let SUPABASE_URL, SUPABASE_ANON_KEY, BACKEND_URL;
 
       let supabase;
       let currentUser = null;
+
+      // Load config from API
+      async function loadConfig() {
+        try {
+          const response = await fetch('/api/config');
+          if (!response.ok) {
+            throw new Error('Failed to load config');
+          }
+          const config = await response.json();
+          SUPABASE_URL = config.supabaseUrl;
+          SUPABASE_ANON_KEY = config.supabaseAnonKey;
+          BACKEND_URL = config.backendUrl;
+          
+          if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+            throw new Error('Missing required configuration');
+          }
+        } catch (error) {
+          console.error('Failed to load config:', error);
+          alert('Failed to load configuration. Please check your environment variables.');
+          throw error;
+        }
+      }
 
       // DOM elements
       let messages, messageInput, sendButton, loginBtn, userInfo, orgName;
 
       // Initialize when DOM is ready
       document.addEventListener("DOMContentLoaded", async function () {
+        // Load config first
+        await loadConfig();
+        
         // Initialize Supabase
         supabase = window.supabase.createClient(
           SUPABASE_URL,
@@ -514,11 +532,10 @@
         messages.scrollTop = messages.scrollHeight;
 
         try {
-          const response = await fetch(BACKEND_URL, {
+          const response = await fetch('/api/chat', {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${API_KEY}`,
             },
             body: JSON.stringify({
               message: content,
